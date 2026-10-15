@@ -1,0 +1,25 @@
+from enum import StrEnum
+
+
+class FailureCategory(StrEnum):
+    FAILED_RUN = "Ejecuciones fallidas"
+    STUCK_RUN = "Ejecuciones bloqueadas"
+    MISSING_RUN = "Falta de ejecuciones"
+    NETWORK = "Red y conectividad"
+    HTTP = "HTTP y APIs"
+    SAP = "Errores funcionales SAP"
+    DATA_QUALITY = "Calidad de datos"
+    SCHEMA = "Validación de esquema"
+    TRANSFORM = "Transformación"
+    ROUTING = "Enrutamiento y colas"
+    SEQUENCE = "Secuencia del flujo"
+    DUPLICATE = "Duplicidad y reenvíos"
+    COUNTERS = "Contadores inconsistentes"
+    BATCH = "Lotes y paginación"
+    WORKER = "Aplicación o worker"
+    DATABASE = "Base de datos"
+    CONFIG = "Configuración"
+    TRACE = "Trazabilidad del log"
+    PERFORMANCE = "Rendimiento y capacidad"
+    STORAGE = "Particiones y almacenamiento"
+    TIME = "Fechas y tiempo"

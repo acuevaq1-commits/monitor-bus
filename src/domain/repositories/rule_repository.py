@@ -1,0 +1,6 @@
+from typing import Protocol
+
+
+class RuleRepository(Protocol):
+    def list(self, kind: str) -> list[dict]: ...
+    def save(self, kind: str, data: dict) -> dict: ...

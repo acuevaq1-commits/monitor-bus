@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<a class="btn btn-outline-primary mb-3" href="/incidents?date_from={{ date_from }}&amp;date_to={{ date_to }}" data-loading>← Volver a intentos fallidos</a>
+<p class="text-muted">Histórico de runs fallidos, agrupado por día (America/Lima), {{ identifier_label }} y mensaje. Se usa <code>iis_mpl_id.texto_legible</code> cuando está disponible.</p>
+<form class="card card-body mb-3" method="get" data-loading>
+  <div class="d-flex flex-wrap gap-2 align-items-end">
+    <label>Desde<input class="form-control" type="date" name="date_from" value="{{ date_from.isoformat() }}" required></label>
+    <label>Hasta<input class="form-control" type="date" name="date_to" value="{{ date_to.isoformat() }}" required></label>
+    <label>Mínimo de intentos fallidos por ID BANNER y día<input class="form-control" type="number" name="min_attempts" min="1" step="1" value="{{ min_attempts }}" required></label>
+    <button class="btn btn-primary" type="submit">Filtrar</button>
+    <a class="btn btn-sm btn-success" href="/incidents/failed-attempts/{{ pi_id }}/export?{{ filter_query }}" data-download><i class="bi bi-file-earmark-excel" aria-hidden="true"></i> Descargar Excel</a>
+  </div>
+</form>
+{% if not findings.source_available %}<div class="alert alert-secondary">Sin fuente de datos.</div>{% endif %}
+<div class="card"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+  <thead><tr><th>Fecha (Lima)</th><th>{{ identifier_label }}</th><th>Veces del mismo error</th><th>Intentos fallidos del día</th><th>Mensaje de error</th></tr></thead>
+  <tbody>{% for row in findings['items'] %}<tr>
+    <td>{{ row.fecha_error.strftime('%d/%m/%Y') if row.fecha_error else '—' }}</td>
+    <td><a href="/payloads?pi_id={{ pi_id }}&amp;{% if pi_id == '00021' %}q{% elif pi_id == '00022' %}bp{% else %}id_banner{% endif %}={{ row.identifier | urlencode }}&amp;date_from={{ row.fecha_error }}&amp;date_to={{ row.fecha_error }}&amp;view=all">{{ row.identifier }}</a></td>
+    <td class="text-danger fw-semibold">{{ row.total_intentos_fallidos }}</td><td class="text-danger fw-semibold">{{ row.total_por_identificador }}</td>
+    <td><div class="incident-error-message">{% if row.error_body == 'Revisar log de CPI' and row.run_ts and row.run_id %}<a href="/runs/{{ row.run_ts | urlencode }}/{{ row.run_id | urlencode }}?tab=cpi&amp;return_to={{ current_url | urlencode }}">{{ row.error_body }}</a>{% else %}{{ row.error_body or '—' }}{% endif %}</div></td>
+  </tr>{% else %}<tr><td colspan="5" class="empty">No hay intentos fallidos para {{ flow_name }} con al menos {{ min_attempts }} intento(s) por ID BANNER y día.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+<nav class="d-flex gap-3 align-items-center mt-3" aria-label="Páginas de intentos fallidos"><span>Página {{ page }}</span>{% if page > 1 %}<a href="?{{ filter_query }}&amp;page={{ page-1 }}" data-loading>Anterior</a>{% endif %}{% if findings.has_next %}<a href="?{{ filter_query }}&amp;page={{ page+1 }}" data-loading>Siguiente</a>{% endif %}</nav>
+{% endblock %}

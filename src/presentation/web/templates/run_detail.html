@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<a class="btn btn-outline-primary mb-3" href="{{ back_url }}" data-loading><i class="bi bi-arrow-left" aria-hidden="true"></i> Volver a resultados</a>
+<ul class="nav nav-tabs" role="tablist">
+  {% for name in ['Resumen','JSON enviado a SAP','Resultado SAP','Eventos','Problemas DQ','Trazabilidad','Texto CPI'] %}
+  <li class="nav-item"><button class="nav-link {% if loop.index == active_tab %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#tab{{ loop.index }}">{{ name }}</button></li>
+  {% endfor %}
+</ul>
+<div class="tab-content card card-body">
+  <div class="tab-pane fade {% if active_tab == 1 %}show active{% endif %}" id="tab1"><pre>{{ trace.run | json_pretty }}</pre></div>
+  <div class="tab-pane fade" id="tab2">
+    {% if trace.sent %}<p class="small text-muted">Vinculado por {{ trace.sent.match }}. <a href="/runs/{{ trace.sent.run_ts | urlencode }}/{{ trace.sent.run_id | urlencode }}?return_to={{ back_url | urlencode }}">Ver registro de envío</a>.</p><pre>{{ trace.sent.payload | json_pretty }}</pre>{% else %}<p class="empty">No se encontró el registro de envío asociado.</p>{% endif %}
+  </div>
+  <div class="tab-pane fade" id="tab3">{% if trace.sap_response %}<pre>{{ trace.sap_response | json_pretty }}</pre>{% else %}<p class="empty">No hay resultado SAP en este registro.</p>{% endif %}</div>
+  <div class="tab-pane fade" id="tab4"><pre>{{ trace.events | json_pretty }}</pre></div>
+  <div class="tab-pane fade" id="tab5"><pre>{{ trace.dq_issues | json_pretty }}</pre></div>
+  <div class="tab-pane fade" id="tab6"><div class="trace">{% for stage in trace.stages %}<div><strong>{{ stage.name }}</strong><br><small>{{ stage.status }} · {{ stage.count }} evento(s)</small></div>{% endfor %}</div></div>
+  <div class="tab-pane fade {% if active_tab == 7 %}show active{% endif %}" id="tab7">{% if trace.cpi and trace.cpi.texto_cpi %}<pre>{{ trace.cpi.texto_cpi }}</pre>{% else %}<p class="empty">No hay texto CPI registrado para este run.</p>{% endif %}</div>
+</div>
+{% endblock %}

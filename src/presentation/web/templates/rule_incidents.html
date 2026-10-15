@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card"><div class="table-responsive"><table class="table table-hover">
+  <thead><tr><th>Detectado (Lima)</th><th>Categoría</th><th>Severidad</th><th>Integración</th><th>Run</th><th>Título</th><th>Estado</th></tr></thead>
+  <tbody>{% for row in items %}<tr>
+    <td>{{ row.detected_at | datetime_lima }}</td><td>{{ row.category }}</td><td>{{ row.severity }}</td><td>{{ row.pi_id or '—' }}</td>
+    <td>{% if row.run_id and row.run_ts %}<a href="/runs/{{ row.run_ts.isoformat() | urlencode }}/{{ row.run_id | urlencode }}?return_to={{ current_url | urlencode }}">{{ row.run_id }}</a>{% else %}—{% endif %}</td>
+    <td>{{ row.title }}</td><td>{{ row.status }}</td>
+  </tr>{% else %}<tr><td colspan="7" class="empty">Todavía no hay incidentes almacenados.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% endblock %}

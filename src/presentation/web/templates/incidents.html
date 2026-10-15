@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<p class="text-muted">El rango de fechas se aplica a los intentos fallidos y se interpreta en horario de Lima.</p>
+<form class="card card-body mb-3" method="get" action="/incidents" data-loading>
+  <div class="d-flex flex-wrap gap-2 align-items-end">
+    <label>Desde<input class="form-control" type="date" name="date_from" value="{{ date_from.isoformat() }}" required></label>
+    <label>Hasta<input class="form-control" type="date" name="date_to" value="{{ date_to.isoformat() }}" required></label>
+    <button class="btn btn-primary" type="submit">Filtrar</button>
+  </div>
+</form>
+<div class="row g-3 mb-4">
+  {% for pi_id in ['00021', '00022', '00023'] %}{% set card = failed_cards[pi_id] %}
+  <div class="col-lg-4 col-md-6"><a class="card category h-100" href="/incidents/failed-attempts/{{ pi_id }}?date_from={{ date_from }}&amp;date_to={{ date_to }}" data-loading><div class="card-body"><div class="d-flex justify-content-between"><h2 class="h5">{{ card.name }}</h2><i class="bi bi-chevron-right" aria-hidden="true"></i></div><div class="category-count {{ 'text-danger' if card.attempts else '' }}">{{ card.attempts if card.attempts is not none else '—' }}</div><small class="text-muted">{% if card.identifiers is not none %}{{ card.identifiers }} {{ card.identifier_label }}(s) con intentos fallidos{% else %}Sin fuente de datos{% endif %}</small></div></a></div>
+  {% endfor %}
+</div>
+<h2 class="h5 mb-3">Otros incidentes</h2>
+<div class="row g-3 mb-4">
+  {% for kind in ['stuck', 'sap', 'inactive'] %}{% set card = operational_cards[kind] %}
+  <div class="col-lg-4 col-md-6"><a class="card category h-100" href="/incidents/{{ kind }}" data-loading><div class="card-body"><div class="d-flex justify-content-between"><h2 class="h5">{{ card.name }}</h2><i class="bi bi-chevron-right" aria-hidden="true"></i></div><div class="category-count {{ 'text-danger' if card.count else '' }}">{{ card.count if card.count is not none else '—' }}</div><small class="text-muted">{% if card.count is none %}Sin fuente de datos{% elif kind == 'stuck' %}STARTED por más de {{ stuck_minutes }} minutos{% elif kind == 'sap' %}Runs exitosos con respuesta SAP fallida · últimos {{ sap_days }} días{% else %}Integraciones sin resultados en {{ inactivity_hours }} horas{% endif %}</small></div></a></div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<a class="btn btn-outline-primary mb-3" href="/incidents" data-loading>← Volver a incidentes</a>
+<p class="text-muted">{% if kind == 'stuck' %}Ejecuciones con estado STARTED durante más de {{ stuck_minutes }} minutos.{% elif kind == 'sap' %}Runs exitosos de BP, cargos y pagos cuyo resultado SAP registra un rechazo en los últimos {{ sap_days }} días.{% else %}Última respuesta registrada de BP, cargos y pagos. Umbral de {{ inactivity_hours }} horas sin resultados.{% endif %}</p>
+{% if not findings.source_available %}<div class="alert alert-secondary">Sin fuente de datos.</div>{% endif %}
+<div class="card"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+  {% if kind == 'inactive' %}
+  <thead><tr><th>Integración</th><th>Último resultado (Lima)</th><th>Horas sin resultados</th><th>Consultar ejecuciones</th></tr></thead>
+  <tbody>{% for row in findings['items'] %}<tr><td>{{ row.pi_id }} · {{ row.flow_name }}</td><td>{{ row.last_ts | datetime_lima if row.last_ts else 'Sin registros' }}</td><td class="text-danger fw-semibold">{{ row.hours_without_results if row.hours_without_results is not none else 'Sin registros' }}</td><td><a href="/runs?pi_id={{ row.pi_id }}">Ver ejecuciones</a></td></tr>{% else %}<tr><td colspan="4" class="empty">Las tres integraciones registran resultados dentro de las últimas {{ inactivity_hours }} horas.</td></tr>{% endfor %}</tbody>
+  {% elif kind == 'stuck' %}
+  <thead><tr><th>Integración</th><th>Run</th><th>Inicio (Lima)</th><th>Minutos transcurridos</th><th>Cola</th></tr></thead>
+  <tbody>{% for row in findings['items'] %}<tr><td>{{ row.flow_name }}</td><td><a href="/runs/{{ row.ts | urlencode }}/{{ row.run_id | urlencode }}?return_to={{ current_url | urlencode }}">{{ row.run_id }}</a></td><td>{{ row.ts | datetime_lima }}</td><td class="text-danger fw-semibold">{{ row.minutes_elapsed }}</td><td>{{ row.queue_name or '—' }}</td></tr>{% else %}<tr><td colspan="5" class="empty">No hay ejecuciones bloqueadas.</td></tr>{% endfor %}</tbody>
+  {% else %}
+  <thead><tr><th>Integración</th><th>Run</th><th>Fecha (Lima)</th><th>Estado run</th><th>Estado JSON</th><th>HTTP</th><th>Mensaje SAP</th></tr></thead>
+  <tbody>{% for row in findings['items'] %}<tr><td>{{ row.flow_name }}</td><td><a href="/runs/{{ row.ts | urlencode }}/{{ row.run_id | urlencode }}?return_to={{ current_url | urlencode }}">{{ row.run_id }}</a></td><td>{{ row.ts | datetime_lima }}</td><td class="text-success">{{ row.status or '—' }}</td><td class="{{ 'text-success' if row.json_status in ['OK', 'SUCCESS', 'COMPLETED', 'FINISHED', '200'] else 'text-danger' if row.json_status else '' }}">{{ row.json_status or '—' }}</td><td class="{{ 'text-success' if row.http_status and row.http_status|string|first == '2' else 'text-danger' if row.http_status else '' }}">{{ row.http_status or '—' }}</td><td><pre class="mb-0 small {{ 'text-danger' if row.error_body else '' }}">{{ row.error_body or '—' }}</pre></td></tr>{% else %}<tr><td colspan="7" class="empty">No hay errores funcionales SAP en los últimos {{ sap_days }} días.</td></tr>{% endfor %}</tbody>
+  {% endif %}
+</table></div></div>
+{% if kind != 'inactive' %}<nav class="d-flex gap-3 align-items-center mt-3" aria-label="Páginas de incidentes"><span>Página {{ page }}</span>{% if page > 1 %}<a href="?page={{ page-1 }}" data-loading>Anterior</a>{% endif %}{% if findings.has_next %}<a href="?page={{ page+1 }}" data-loading>Siguiente</a>{% endif %}</nav>{% endif %}
+{% endblock %}

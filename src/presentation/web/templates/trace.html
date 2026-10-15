@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+<ul class="nav nav-tabs mb-3" aria-label="Tipo de integración">
+  {% for key, label in [('bp', 'BP'), ('cargos', 'Cargos (Pedidos)'), ('pagos', 'Pagos')] %}
+  <li class="nav-item"><a class="nav-link {% if tab == key %}active{% endif %}" {% if tab == key %}aria-current="page"{% endif %} href="/trace?tab={{ key }}">{{ label }}</a></li>
+  {% endfor %}
+</ul>
+
+<form class="card card-body mb-3" method="get" action="/trace" data-loading>
+  <input type="hidden" name="tab" value="{{ tab }}">
+  <input type="hidden" name="submitted" value="1">
+  <div class="row g-3">
+    <div class="col-md-4"><label class="form-label" for="trace-banner">ID BANNER</label><input class="form-control" id="trace-banner" name="id_banner" value="{{ filters.id_banner }}" maxlength="100"></div>
+    {% if tab == 'bp' %}<div class="col-md-4"><label class="form-label" for="trace-surname">APELLIDOS</label><input class="form-control" id="trace-surname" name="apellidos" value="{{ filters.apellidos }}" maxlength="100"></div>{% endif %}
+    {% if tab == 'bp' %}<div class="col-md-4"><label class="form-label" for="trace-dni">DNI (TAXNUM)</label><input class="form-control" id="trace-dni" name="dni" value="{{ filters.dni }}" maxlength="100"></div>{% else %}<div class="col-md-4"><label class="form-label" for="trace-surrogate">SURROGATE</label><input class="form-control" id="trace-surrogate" name="surrogate" value="{{ filters.surrogate }}" maxlength="100"></div>{% endif %}
+    {% if tab != 'bp' %}<div class="col-md-4"><label class="form-label" for="trace-sap">ID SAP</label><input class="form-control" id="trace-sap" name="id_sap" value="{{ filters.id_sap }}" maxlength="100"></div>{% endif %}
+    <div class="col-md-2"><label class="form-label" for="trace-status">Estado</label><select class="form-select" id="trace-status" name="status"><option value="">Todos</option>{% for value in ['OK', 'ERROR', 'STARTED'] %}<option value="{{ value }}" {% if filters.status | upper == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></div>
+    <div class="col-md-2"><label class="form-label" for="trace-from">Desde</label><input class="form-control" id="trace-from" name="date_from" type="date" value="{{ date_from.isoformat() if date_from else '' }}"></div>
+    <div class="col-md-2"><label class="form-label" for="trace-to">Hasta</label><input class="form-control" id="trace-to" name="date_to" type="date" value="{{ date_to.isoformat() if date_to else '' }}"></div>
+  </div>
+  <div class="d-flex gap-2 align-items-center mt-3"><button class="btn btn-primary">Buscar registros</button><a class="btn btn-outline-secondary" href="/trace?tab={{ tab }}">Limpiar filtros</a></div>
+  <small class="text-muted mt-2">Se consultan todas las ejecuciones del rango indicado, incluidas las correctas y las fallidas. Por defecto se muestran los últimos siete días. Los identificadores se buscan como valores completos en los payloads; los apellidos admiten coincidencia parcial. Se incluyen ambos días en horario de Lima. Seleccione un ID BANNER para abrir el detalle de la ejecución.</small>
+  {% if tab == 'cargos' %}<small class="text-muted mt-1">Cargos: ID BANNER corresponde a <code>KUNNR</code> y SURROGATE a <code>BSTKD</code>.</small>{% endif %}
+</form>
+
+{% if searched %}
+{% if not results.source_available %}<div class="alert alert-secondary">Sin fuente de datos.</div>{% endif %}
+<div class="card"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+  <thead><tr><th>ID BANNER</th>{% if tab == 'bp' %}<th>APELLIDOS</th><th>DNI (TAXNUM)</th>{% else %}<th>SURROGATE</th><th>ID SAP</th><th>Referencia adicional</th>{% endif %}<th>Etapa / cola</th><th>Estado</th><th>Errores</th><th>Fecha Hora</th></tr></thead>
+  <tbody>{% for item in results['items'] %}<tr>
+    <td>{% if item.id_banner %}<a href="/runs/{{ item.ts | urlencode }}/{{ item.run_id | urlencode }}?return_to={{ current_url | urlencode }}">{{ item.id_banner }}</a>{% else %}—{% endif %}</td>
+    {% if tab == 'bp' %}<td>{{ item.reference or '—' }}</td><td>{{ item.dni or '—' }}</td>{% else %}<td>{% if item.surrogate %}<a href="/surrogate?pi_id={{ '00022' if tab == 'cargos' else '00023' }}&amp;surrogate={{ item.surrogate | urlencode }}">{{ item.surrogate }}</a>{% else %}—{% endif %}</td><td>{{ item.id_sap or '—' }}</td><td>{{ item.reference or '—' }}</td>{% endif %}
+    <td>{{ item.queue_name or '—' }}</td><td class="{{ 'text-danger' if item.status | upper in ['ERROR', 'FAILED'] else 'text-success' if item.status | upper in ['OK', 'SUCCESS', 'COMPLETED', 'FINISHED'] else '' }}">{{ item.status or '—' }}</td>
+    <td class="{{ 'text-danger' if item.error_count else 'text-success' if item.error_count == 0 else '' }}">{{ item.error_count if item.error_count is not none else '—' }}</td>
+    <td>{{ item.ts | datetime_lima }}</td>
+  </tr>{% else %}<tr><td colspan="{{ 7 if tab == 'bp' else 8 }}" class="text-muted p-4">No hay registros para esta búsqueda.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+<nav class="d-flex gap-3 align-items-center mt-3" aria-label="Páginas de trazabilidad">
+  <span>Página {{ page }}</span>
+  {% if page > 1 %}<a href="?{{ filter_query }}&amp;page={{ page-1 }}" data-loading>Anterior</a>{% endif %}
+  {% if results.has_next %}<a href="?{{ filter_query }}&amp;page={{ page+1 }}" data-loading>Siguiente</a>{% endif %}
+</nav>
+{% else %}
+<div class="card card-body text-muted">Seleccione los filtros y pulse «Buscar registros» para consultar la trazabilidad.</div>
+{% endif %}
+{% endblock %}
